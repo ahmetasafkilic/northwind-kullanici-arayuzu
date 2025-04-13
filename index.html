@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Northwind SQL Arayüzü</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f9f9f9; }
+    .section-card { margin-bottom: 2rem; }
+    table th, table td { vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <h1 class="text-center text-primary mb-4">📊 Northwind SQL Arayüzü</h1>
+
+    <!-- 1. Müşteri Siparişleri -->
+    <div class="card section-card">
+      <div class="card-header bg-primary text-white">Müşteri Siparişleri</div>
+      <div class="card-body">
+        <input type="text" id="customerName" class="form-control mb-2" placeholder="Müşteri adı girin">
+        <button class="btn btn-primary" onclick="getOrders()">Siparişleri Getir</button>
+        <div class="table-responsive mt-3 d-none" id="ordersTableWrapper">
+          <table class="table table-striped">
+            <thead><tr><th>Sipariş ID</th><th>Tarih</th><th>Ürün</th><th>Adet</th></tr></thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Top 5 Müşteri -->
+    <div class="card section-card">
+      <div class="card-header bg-success text-white">Top 5 Müşteri</div>
+      <div class="card-body">
+        <button class="btn btn-success" onclick="getTopCustomers()">Listele</button>
+        <div class="table-responsive mt-3 d-none" id="topCustomersWrapper">
+          <table class="table table-bordered">
+            <thead><tr><th>Müşteri</th><th>Sipariş Sayısı</th></tr></thead>
+            <tbody id="topCustomersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Çalışan Satış Özeti -->
+    <div class="card section-card">
+      <div class="card-header bg-secondary text-white">Çalışan Satış Özeti</div>
+      <div class="card-body">
+        <input type="text" id="employeeName" class="form-control mb-2" placeholder="Çalışan adı girin">
+        <button class="btn btn-secondary" onclick="getEmployeeSales()">Getir</button>
+        <div class="table-responsive mt-3 d-none" id="employeeSalesWrapper">
+          <table class="table table-sm table-striped">
+            <thead><tr><th>Çalışan</th><th>Sipariş Sayısı</th><th>Ülke Sayısı</th></tr></thead>
+            <tbody id="employeeSalesTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Stokta Kalmayan Ürünler -->
+    <div class="card section-card">
+      <div class="card-header bg-warning text-dark">Stokta Kalmayan Ürünler</div>
+      <div class="card-body">
+        <button class="btn btn-warning" onclick="getOutOfStock()">Listele</button>
+        <div class="table-responsive mt-3 d-none" id="outOfStockWrapper">
+          <table class="table table-bordered table-sm">
+            <thead><tr><th>Ürün</th><th>Toplam Sipariş</th></tr></thead>
+            <tbody id="outOfStockTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Yıla Göre Satış -->
+    <div class="card section-card">
+      <div class="card-header bg-dark text-white">Yıla Göre Toplam Satış</div>
+      <div class="card-body">
+        <input type="number" id="salesYear" class="form-control mb-2" placeholder="Yıl girin (örn: 1997)">
+        <button class="btn btn-dark" onclick="getSalesByYear()">Sorgula</button>
+        <div class="alert alert-info mt-3 d-none" id="salesYearResult"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function clearTable(wrapperId, bodyId) {
+      document.getElementById(wrapperId).classList.add("d-none");
+      document.getElementById(bodyId).innerHTML = "";
+    }
+
+    async function getOrders() {
+      clearTable("ordersTableWrapper", "ordersTableBody");
+      const name = document.getElementById("customerName").value;
+      const res = await fetch(`http://localhost:3000/orders-by-customer?name=${name}`);
+      const data = await res.json();
+      const wrapper = document.getElementById("ordersTableWrapper");
+      const tbody = document.getElementById("ordersTableBody");
+
+      data.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row.OrderID}</td><td>${new Date(row.OrderDate).toLocaleDateString()}</td><td>${row.ProductName}</td><td>${row.Quantity}</td></tr>`;
+      });
+      if (data.length > 0) wrapper.classList.remove("d-none");
+    }
+
+    async function getTopCustomers() {
+      clearTable("topCustomersWrapper", "topCustomersTableBody");
+      const res = await fetch(`http://localhost:3000/top-customers`);
+      const data = await res.json();
+      const wrapper = document.getElementById("topCustomersWrapper");
+      const tbody = document.getElementById("topCustomersTableBody");
+
+      data.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row.CompanyName}</td><td>${row.SiparisSayisi}</td></tr>`;
+      });
+      if (data.length > 0) wrapper.classList.remove("d-none");
+    }
+
+    async function getEmployeeSales() {
+      clearTable("employeeSalesWrapper", "employeeSalesTableBody");
+      const name = document.getElementById("employeeName").value;
+      const res = await fetch(`http://localhost:3000/employee-sales-summary?name=${name}`);
+      const data = await res.json();
+      const wrapper = document.getElementById("employeeSalesWrapper");
+      const tbody = document.getElementById("employeeSalesTableBody");
+
+      data.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row.Employee}</td><td>${row.Orders}</td><td>${row.Countries}</td></tr>`;
+      });
+      if (data.length > 0) wrapper.classList.remove("d-none");
+    }
+
+    async function getOutOfStock() {
+      clearTable("outOfStockWrapper", "outOfStockTableBody");
+      const res = await fetch(`http://localhost:3000/out-of-stock-products`);
+      const data = await res.json();
+      const wrapper = document.getElementById("outOfStockWrapper");
+      const tbody = document.getElementById("outOfStockTableBody");
+
+      data.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row.ProductName}</td><td>${row.TotalOrdered}</td></tr>`;
+      });
+      if (data.length > 0) wrapper.classList.remove("d-none");
+    }
+
+    async function getSalesByYear() {
+      const resultDiv = document.getElementById("salesYearResult");
+      resultDiv.classList.add("d-none");
+      const year = document.getElementById("salesYear").value;
+      const res = await fetch(`http://localhost:3000/sales-by-year?year=${year}`);
+      const data = await res.json();
+      const amount = data.TotalSales ?? 0;
+      resultDiv.innerText = `Toplam satış (${year}): $${parseFloat(amount).toFixed(2)}`;
+      resultDiv.classList.remove("d-none");
+    }
+  </script>
+</body>
+</html>
